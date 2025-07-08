@@ -24,7 +24,7 @@ from pytorch_quantization import tensor_quant
 
 from . import _utils
 
-__all__ = ["QuantLinear"]
+__all__ = ["Linear", "QuantLinear"]
 
 class QuantLinear(nn.Linear, _utils.QuantMixin):
     """Quantized version of nn.Linear
@@ -73,3 +73,6 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         output = F.linear(quant_input, quant_weight, bias=self.bias)
 
         return output
+
+
+Linear = QuantLinear
