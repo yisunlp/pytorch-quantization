@@ -523,10 +523,8 @@ def _tensor_quant(inputs, amax, num_bits=8, unsigned=False, narrow_range=True):
 
     # Computation must be in FP32 to prevent potential over flow.
     input_dtype = inputs.dtype
-    if inputs.dtype == torch.half:
-        inputs = inputs.float()
-    if amax.dtype == torch.half:
-        amax = amax.float()
+    inputs = inputs.float()
+    amax = amax.float()
 
     min_amax = amax.min()
     if min_amax < 0:
@@ -551,10 +549,8 @@ def _tensor_quant(inputs, amax, num_bits=8, unsigned=False, narrow_range=True):
     if min_amax <= epsilon:
         scale[zero_amax_mask] = 1.  # Return 1 makes more sense for values quantized to 0 with amax=0
 
-    if input_dtype == torch.half:
-        outputs = outputs.half()
 
-    return outputs, scale
+    return outputs.to(input_dtype), scale
 
 
 class FakeAffineTensorQuantFunction(Function):
