@@ -60,17 +60,32 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     default_quant_desc_input = tensor_quant.QUANT_DESC_8BIT_PER_TENSOR
     default_quant_desc_weight = tensor_quant.QUANT_DESC_8BIT_LINEAR_WEIGHT_PER_ROW
 
-    def __init__(self, in_features, out_features, bias=True, **kwargs):
+    def __init__(self, in_features, out_features, bias=True, dynamic_input=False, true_quant=False, **kwargs):
         super(QuantLinear, self).__init__(in_features, out_features, bias)
         quant_desc_input, quant_desc_weight = _utils.pop_quant_desc_in_kwargs(self.__class__, **kwargs)
+        self.dynamic_input = dynamic_input
+        self.true_quant = true_quant # leave for future use, currently not used
 
         self.init_quantizer(quant_desc_input, quant_desc_weight)
 
     def forward(self, input):
-        quant_input = self._input_quantizer(input)
-        quant_weight = self._weight_quantizer(self.weight)
+        if not self.training and self.dynamic_input:
+            input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
+            input_scale = (input_abs_max / 127.0).clamp(min=1e-8)
+            input = input / input_scale
 
-        output = F.linear(quant_input, quant_weight, bias=self.bias)
+            quant_input = self._input_quantizer(input)
+            quant_weight = self._weight_quantizer(self.weight)
+
+            output = F.linear(quant_input, quant_weight)
+            output = output * input_scale
+            if self.bias is not None:
+                output += self.bias.unsqueeze(0)
+        else:
+            quant_input = self._input_quantizer(input)
+            quant_weight = self._weight_quantizer(self.weight)
+
+            output = F.linear(quant_input, quant_weight, bias=self.bias)
 
         return output
 
