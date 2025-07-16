@@ -76,6 +76,7 @@ class TensorQuantizer(nn.Module):
         self._learn_amax = quant_desc.learn_amax
         self._unsigned = quant_desc.unsigned
         self._narrow_range = quant_desc.narrow_range
+        self._dynamic_input = quant_desc.dynamic_input
 
         self._scale = None if not quant_desc.fake_quant else 1.
         self._disabled = disabled
@@ -303,7 +304,8 @@ class TensorQuantizer(nn.Module):
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-
+        if self._dynamic_input and not self.training:
+            amax = torch.ones_like(amax) * 127
         return amax
 
     def _quant_forward(self, inputs):

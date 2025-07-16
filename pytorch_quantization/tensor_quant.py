@@ -64,6 +64,8 @@ class ScaledQuantDescriptor():
         calib_method: A string. One of ["max", "histogram"] indicates which calibration to use. Except the simple
             max calibration, other methods are all hisogram based. Default "max".
         unsigned: A Boolean. If True, use unsigned. Default False.
+        dynamic_input: A boolean. If True, enables dynamic quantization for inputs during inference. Default False.
+        train_with_int8_matmul: A boolean. If True, enables INT8 matrix multiplication during training. Default False.
 
     Raises:
         TypeError: If unsupported type is passed in.
@@ -78,6 +80,8 @@ class ScaledQuantDescriptor():
         - num_bits:
         - amax:
         - unsigned:
+        - dynamic_input:
+        - train_with_int8_matmul:
     """
 
     def __init__(self, num_bits=8, name=None, **kwargs):
@@ -116,6 +120,10 @@ class ScaledQuantDescriptor():
         self._calib_method = kwargs.pop('calib_method', "max")
         self._unsigned = kwargs.pop('unsigned', False)
         self._narrow_range = kwargs.pop('narrow_range', False)
+        
+        # Added parameters
+        self._dynamic_input = kwargs.pop('dynamic_input', False)
+        self._train_with_int8_matmul = kwargs.pop('train_with_int8_matmul', False)
 
         if kwargs:
             raise TypeError("Unused keys: {}".format(kwargs.keys()))
@@ -160,6 +168,14 @@ class ScaledQuantDescriptor():
     @property
     def narrow_range(self):
         return self._narrow_range
+        
+    @property
+    def dynamic_input(self):
+        return self._dynamic_input
+
+    @property
+    def train_with_int8_matmul(self):
+        return self._train_with_int8_matmul
 
     # pylint:enable=missing-docstring
 
@@ -178,6 +194,10 @@ class ScaledQuantDescriptor():
             s += " learn_amax"
         if self._scale_amax:
             s += " scale_amax={_scale_amax}"
+        if self._dynamic_input:
+            s += " dynamic_input"
+        if self._train_with_int8_matmul:
+            s += " train_with_int8_matmul"
         s += ")"
         return s.format(**self.__dict__)
 
@@ -208,6 +228,10 @@ class ScaledQuantDescriptor():
             obj_dict['learn_amax'] = self._learn_amax
         if self._unsigned:
             obj_dict['unsigned'] = self._unsigned
+        if self._dynamic_input:
+            obj_dict['dynamic_input'] = self._dynamic_input
+        if self._train_with_int8_matmul:
+            obj_dict['train_with_int8_matmul'] = self._train_with_int8_matmul
 
         return obj_dict
 
@@ -232,7 +256,6 @@ class ScaledQuantDescriptor():
         quant_desc = cls(**obj_dict)
 
         return quant_desc
-
 
 QuantDescriptor = ScaledQuantDescriptor
 
