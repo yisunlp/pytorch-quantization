@@ -120,7 +120,7 @@ class ScaledQuantDescriptor():
         self._calib_method = kwargs.pop('calib_method', "max")
         self._unsigned = kwargs.pop('unsigned', False)
         self._narrow_range = kwargs.pop('narrow_range', False)
-        
+        import pdb;pdb.set_trace()
         # Added parameters
         self._dynamic_input = kwargs.pop('dynamic_input', False)
         self._train_with_int8_matmul = kwargs.pop('train_with_int8_matmul', False)
