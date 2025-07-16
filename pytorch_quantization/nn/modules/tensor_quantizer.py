@@ -294,7 +294,7 @@ class TensorQuantizer(nn.Module):
                         reduce_axis.append(i)
             amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
             if hasattr(self, '_amax') and self.training:
-                self._amax = 0.9 * self._amax + 0.1 * amax
+                self._amax = 0.9 * self._amax + 0.1 * amax.mean() * 1.2
         if self._scale_amax is not None:
             amax = amax.detach() * self._scale_amax
 
