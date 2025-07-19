@@ -78,10 +78,10 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             if True: # Now weight need to scale dynamically because the weight btq and TRT refit operation
                 weight_abs_max = torch.max(torch.abs(self.weight), dim=-1, keepdim=True)[0]
                 weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
-                self.weight = self.weight / weight_scale
+                weight = self.weight / weight_scale
 
             quant_input = self._input_quantizer(input)
-            quant_weight = self._weight_quantizer(self.weight)
+            quant_weight = self._weight_quantizer(weight)
 
             output = F.linear(quant_input, quant_weight)
             output = output * input_scale
