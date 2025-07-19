@@ -22,7 +22,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from pytorch_quantization import tensor_quant
-from LinearKernels.LinearFunction import QuantizedLinearFunctionWithFullBackward
+from .LinearKernels.LinearFunction import QuantizedLinearFunctionWithFullBackward
 
 from . import _utils
 

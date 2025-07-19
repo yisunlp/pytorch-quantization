@@ -11,7 +11,7 @@
 
 import torch
 import torch.nn as nn
-from LinearFunction import QuantizedLinearFunction, QuantizedLinearFunctionWithFullBackward
+from .LinearFunction import QuantizedLinearFunction, QuantizedLinearFunctionWithFullBackward
 # 假设这是您的第一个自定义 Linear 实现
 # 它可能是一个使用 Triton 内核的量化 Linear 层，例如 W8A16
 class CustomLinearA(nn.Module):

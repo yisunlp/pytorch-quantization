@@ -1,9 +1,9 @@
 import torch
 from torch.autograd import Function
-from quant_kernels import quant_by_row
-from ForwardGEMM import ForwardGEMM
-from DGradGEMM import DGradGEMM
-from WGradGEMM import WGradGEMM
+from .quant_kernels import quant_by_row
+from .ForwardGEMM import ForwardGEMM
+from .DGradGEMM import DGradGEMM
+from .WGradGEMM import WGradGEMM
 
 class QuantizedLinearFunction(Function):
     """

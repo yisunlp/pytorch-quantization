@@ -1,7 +1,7 @@
 import torch
 import triton
 import triton.language as tl
-from quant_kernels import quant_by_row
+from .quant_kernels import quant_by_row
 
 # ==============================================================================
 # 1. WGradGEMM Kernel
