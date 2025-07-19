@@ -91,14 +91,14 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             # Defultly, use our true quantization and Linear function to accelerate the training
             # Instead of using the torch.nn.functional.linear with bf16/fp16, we use FP8/INT8 kernel for GEMM
             # Initial code:
-            # quant_input = self._input_quantizer(input)
-            # quant_weight = self._weight_quantizer(self.weight)
-            # output = F.linear(quant_input, quant_weight, bias=self.bias)
+            quant_input = self._input_quantizer(input)
+            quant_weight = self._weight_quantizer(self.weight)
+            output = F.linear(quant_input, quant_weight, bias=self.bias)
             
             # During inference, please specify dynamic_input=True because we have deleted the code for the initial static quantization
             
             # New code:
-            output = QuantizedLinearFunctionWithFullBackward.apply(input, self.weight, self.bias)
+            #output = QuantizedLinearFunctionWithFullBackward.apply(input, self.weight, self.bias)
 
         return output
 
