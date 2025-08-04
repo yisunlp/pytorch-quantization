@@ -101,15 +101,5 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             output = QuantizedLinearFunctionWithFullBackward.apply(input, self.weight, self.bias)
 
         return output
-    def to(self, *args, **kwargs):
-        """
-        Prevent float16 or bfloat16 transformation.
-        """
-        dtype = kwargs.get('dtype', None)
-        if isinstance(args, tuple) and len(args) > 0 and isinstance(args[0], torch.dtype):
-            dtype = args[0]
-        if dtype in [torch.float16, torch.bfloat16]:
-            return self
-        return super().to(*args, **kwargs)
 
 Linear = QuantLinear
