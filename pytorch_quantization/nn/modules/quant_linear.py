@@ -72,6 +72,8 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
 
     def forward(self, input):
         if not self.training and self.dynamic_input:
+            dtype = input.dtype
+            input = input.float()
             input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
             input_scale = (input_abs_max / 127.0).clamp(min=1e-8)
             input = input / input_scale
@@ -88,6 +90,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             output = output * input_scale
             if self.bias is not None:
                 output += self.bias.unsqueeze(0)
+            output = output.to(dtype)
         else:
             # Defultly, use our true quantization and Linear function to accelerate the training
             # Instead of using the torch.nn.functional.linear with bf16/fp16, we use FP8/INT8 kernel for GEMM
