@@ -69,6 +69,7 @@ class TensorQuantizer(nn.Module):
         """Initialize quantizer and set up required variables"""
         super(TensorQuantizer, self).__init__()
         # Expand quant_desc. Use quant_desc.dict would be eaiser, but adding one-by-one explicitly gives more control
+        self.quant_desc = quant_desc
         self._num_bits = quant_desc.num_bits
         self._fake_quant = quant_desc.fake_quant
         self._axis = quant_desc.axis
@@ -415,7 +416,7 @@ class TensorQuantizer(nn.Module):
         s += " narrow" if (self._narrow_range) else ""
         s += " fake" if (self._fake_quant) else ""
         s += " axis={}".format(self._axis) if self._axis is not None else " per-tensor"
-        s += " amax={}".format(self._short_amax())
+        s += " amax={}".format(self.quant_desc.amax)
         s += " *{}".format(self._scale_amax) if self._scale_amax else ""
         s += " pre_quant_scale" if self.pre_quant_scale is not None else ""
         s += " learned" if (self._learn_amax) else ""
