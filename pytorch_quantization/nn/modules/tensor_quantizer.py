@@ -85,7 +85,7 @@ class TensorQuantizer(nn.Module):
         self._if_calib = if_calib
 
         if quant_desc.amax is not None:
-            self.register_buffer('_amax', torch.tensor(quant_desc.amax))
+            self.register_buffer('_amax', torch.ones(quant_desc.axis, dtype=torch.float32) * quant_desc.amax)
 
         # Clip module consumes a lot of memory, so only create it if learn_amax is True
         if self._learn_amax:
