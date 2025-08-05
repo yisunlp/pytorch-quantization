@@ -69,7 +69,6 @@ class TensorQuantizer(nn.Module):
         """Initialize quantizer and set up required variables"""
         super(TensorQuantizer, self).__init__()
         # Expand quant_desc. Use quant_desc.dict would be eaiser, but adding one-by-one explicitly gives more control
-        self.quant_desc = quant_desc
         self._num_bits = quant_desc.num_bits
         self._fake_quant = quant_desc.fake_quant
         self._axis = quant_desc.axis
@@ -86,7 +85,7 @@ class TensorQuantizer(nn.Module):
         self._if_calib = if_calib
 
         if quant_desc.amax is not None:
-            self.register_buffer('_amax', torch.ones(quant_desc.axis, dtype=torch.float32) * quant_desc.amax)
+            self.register_buffer('_amax', torch.tensor(quant_desc.amax))
 
         # Clip module consumes a lot of memory, so only create it if learn_amax is True
         if self._learn_amax:
@@ -282,26 +281,19 @@ class TensorQuantizer(nn.Module):
 
     def _get_amax(self, inputs):
         """get amax from buffer or compute it dynamically."""
-        if hasattr(self, '_amax') and not self.training:
-            amax = self._amax
+        # if hasattr(self, '_amax') and not self.training:
+        #     amax = self._amax
+        # else:
+        if self._axis is None:
+            reduce_axis = None
         else:
-            if self._axis is None:
-                reduce_axis = None
-            else:
-                reduce_axis = []
-                # Swap axis to reduce
-                axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
-                for i in range(inputs.dim()):
-                    if not i in axis:
-                        reduce_axis.append(i)
-            amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
-            if hasattr(self, '_amax') and self.training:
-                if not self._dynamic_input:
-                    self._amax = amax
-                else:
-                    # previous version: update amax with a moving average
-                    #self._amax = 0.99 * self._amax + 0.01 * amax.mean() * 1.2
-                    self._amax = torch.ones_like(amax) * 127.0
+            reduce_axis = []
+            # Swap axis to reduce
+            axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
+            for i in range(inputs.dim()):
+                if not i in axis:
+                    reduce_axis.append(i)
+        amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
         if self._scale_amax is not None:
             amax = amax.detach() * self._scale_amax
 
@@ -310,8 +302,15 @@ class TensorQuantizer(nn.Module):
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-        if self._dynamic_input and not self.training:
-            amax = torch.ones_like(amax) * 127.0
+        if hasattr(self, '_amax'):
+            if not self._dynamic_input:
+                self._amax = amax
+            else:
+                # previous version: update amax with a moving average
+                #self._amax = 0.99 * self._amax + 0.01 * amax.mean() * 1.2
+                self._amax = torch.ones_like(amax) * 127.0
+        if not self.training:
+            amax = self._amax
         return amax
 
     def _quant_forward(self, inputs):
@@ -416,7 +415,7 @@ class TensorQuantizer(nn.Module):
         s += " narrow" if (self._narrow_range) else ""
         s += " fake" if (self._fake_quant) else ""
         s += " axis={}".format(self._axis) if self._axis is not None else " per-tensor"
-        s += " amax={}".format(self.quant_desc.amax)
+        s += " amax={}".format(self._short_amax())
         s += " *{}".format(self._scale_amax) if self._scale_amax else ""
         s += " pre_quant_scale" if self.pre_quant_scale is not None else ""
         s += " learned" if (self._learn_amax) else ""
