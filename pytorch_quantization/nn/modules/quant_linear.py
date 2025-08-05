@@ -29,25 +29,6 @@ from . import _utils
 
 __all__ = ["Linear", "QuantLinear"]
 
-# Fake quantization function and matmul
-def quant_matmul(input, weight, bias=None):
-    input_dtype=input.dtype
-    input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
-    input_scale = (input_abs_max / 127.0).clamp(min=1e-8)
-    input = input / input_scale
-    input = input.to(dtype=torch.int32)
-    # Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
-    weight_abs_max = torch.max(torch.abs(weight), dim=1, keepdim=True)[0]
-    weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
-    weight = weight / weight_scale
-    weight = weight.to(dtype=torch.int32)
-    # matmul
-    output = torch.matmul(input, weight.t())
-    output = output.to(input_dtype) * input_scale * weight_scale.t()
-    if bias is not None:
-        output += bias.unsqueeze(0)
-    return output
-
 class QuantLinear(nn.Linear, _utils.QuantMixin):
     """Quantized version of nn.Linear
 
@@ -91,21 +72,20 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
 
     def forward(self, input):
         if not self.training and self.dynamic_input:
-            # input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
-            # input_scale = (input_abs_max / 127.0).clamp(min=1e-8)
-            # input = input / input_scale
-            # # Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
-            # # if True: # Now weight need to scale dynamically because the weight btq and TRT refit operation
-            # #     weight_abs_max = torch.max(torch.abs(self.weight), dim=-1, keepdim=True)[0]
-            # #     weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
-            # #     weight = self.weight / weight_scale
+            input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
+            input_scale = (input_abs_max / 127.0).clamp(min=1e-8)
+            input = input / input_scale
+            # Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
+            # if True: # Now weight need to scale dynamically because the weight btq and TRT refit operation
+            #     weight_abs_max = torch.max(torch.abs(self.weight), dim=-1, keepdim=True)[0]
+            #     weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
+            #     weight = self.weight / weight_scale
 
-            # quant_input = self._input_quantizer(input)
-            # quant_weight = self._weight_quantizer(self.weight)
+            quant_input = self._input_quantizer(input)
+            quant_weight = self._weight_quantizer(self.weight)
 
-            # output = F.linear(quant_input, quant_weight)
-            # output = output * input_scale
-            output = quant_matmul(input, self.weight, bias=None)
+            output = F.linear(quant_input, quant_weight)
+            output = output * input_scale
             if self.bias is not None:
                 output += self.bias.unsqueeze(0)
         else:
