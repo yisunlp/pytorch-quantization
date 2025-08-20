@@ -72,6 +72,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
 
     def forward(self, input):
         if not self.training and self.dynamic_input:
+            return F.linear(input,self.weight)
             input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
             input_scale = (input_abs_max.clamp(min=1e-5) / 127.0)
             input = (input / input_scale).clamp(-127.0, 127.0)
