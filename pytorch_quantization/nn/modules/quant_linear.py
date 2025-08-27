@@ -23,7 +23,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from pytorch_quantization import tensor_quant
-from .LinearKernels.LinearFunction import QuantizedLinearFunctionWithFullBackward
+from .LinearKernels.LinearFunction import QuantLinearFunction
 
 from . import _utils
 
@@ -100,7 +100,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             # During inference, please specify dynamic_input=True because we have deleted the code for the initial static quantization
             
             # New code:
-            output = QuantizedLinearFunctionWithFullBackward.apply(input, self.weight, self.bias)
+            output = QuantLinearFunction.apply(input, self.weight, self.bias)
 
         return output
 
