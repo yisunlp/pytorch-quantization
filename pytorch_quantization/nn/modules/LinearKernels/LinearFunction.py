@@ -1,6 +1,6 @@
 import torch
-from quant_kernels import quant_by_row
-from ForwardGEMM import ForwardGEMM
+from .quant_kernels import quant_by_row
+from .ForwardGEMM import ForwardGEMM
 
 class QuantLinearFunction(torch.autograd.Function):
     """
