@@ -1,7 +1,7 @@
 import torch
 import triton
 import triton.language as tl
-from .quant_kernels import quant_by_row
+from quant_kernels import quant_by_row
 
 # ==============================================================================
 # 1. Fused GEMM + Dequantization Kernel
@@ -90,18 +90,12 @@ def ForwardGEMM(
     Returns:
         torch.Tensor: The output tensor of shape [bs, seq_len, output_dim] and specified dtype.
     """
-    assert x.dim() == 3 and x_scale.dim() == 3, "Input x and x_scale must be 3D"
+    assert x.dim() == 2 and x_scale.dim() == 2, "Input x and x_scale must be 3D"
     assert w.dim() == 2 and w_scale.dim() == 2, "Weight w and w_scale must be 2D"
     assert x.is_cuda and w.is_cuda, "All tensors must be on a CUDA device"
     assert x.dtype == torch.int8 and w.dtype == torch.int8, "x and w must be INT8"
     
-    bs, seq_len, input_dim = x.shape
-    output_dim, _ = w.shape
-    
-    x_2d = x.view(-1, input_dim)
-    x_scale_2d = x_scale.view(-1, 1)
-
-    M, K = x_2d.shape
+    M, K = x.shape
     N, _ = w.shape
     
     assert K == w.shape[1], f"Dimension mismatch: x.shape[-1] ({K}) != w.shape[1] ({w.shape[1]})"
@@ -111,16 +105,16 @@ def ForwardGEMM(
     grid = lambda META: (triton.cdiv(M, META['BLOCK_SIZE_M']) * triton.cdiv(N, META['BLOCK_SIZE_N']),)
 
     forward_gemm_kernel[grid](
-        x_2d, x_scale_2d,
+        x, x_scale,
         w, w_scale,
         output,
         M, N, K,
-        x_2d.stride(0), x_2d.stride(1),
+        x.stride(0), x.stride(1),
         w.stride(0), w.stride(1),
         output.stride(0), output.stride(1),
     )
     
-    return output.view(bs, seq_len, output_dim)
+    return output
 
 # ==============================================================================
 # 2. Example Usage and Verification
@@ -148,13 +142,12 @@ if __name__ == "__main__":
         exit()
 
     # Prepare Data
-    x_fp = torch.randn((BS, SEQ_LEN, INPUT_DIM), device=device, dtype=DTYPE)
+    x_fp = torch.randn((BS * SEQ_LEN, INPUT_DIM), device=device, dtype=DTYPE)
     # Create a non-contiguous (column-major) weight tensor to test the optimized pipeline
     w_fp = torch.randn((INPUT_DIM, OUTPUT_DIM), device=device, dtype=DTYPE).T
 
     # Quantize inputs using the optimized, flexible quantization function
     x_int8, x_scale = quant_by_row(x_fp)
-    x_int8 = x_int8.view(BS, SEQ_LEN, INPUT_DIM) # Reshape back
     w_int8, w_scale = quant_by_row(w_fp)
     
     # 1. Reference Calculation (PyTorch)
@@ -166,7 +159,6 @@ if __name__ == "__main__":
     # 2. Triton Kernel Execution
     print("🚀 Executing Triton kernel...")
     triton_output = ForwardGEMM(x_int8, x_scale, w_int8, w_scale, DTYPE)
-
     # 3. Verification
     print("🔎 Verifying correctness...")
     is_correct = torch.allclose(triton_output, torch_output, atol=1e-1, rtol=1e-2)
@@ -176,7 +168,7 @@ if __name__ == "__main__":
     
     # 4. Performance Benchmarking
     print("\n⚡️ Running performance benchmark...")
-    ms_torch = triton.testing.do_bench(lambda: torch.matmul((x_int8.to(DTYPE) * x_scale), (w_int8.to(DTYPE) * w_scale).T))
+    ms_torch = triton.testing.do_bench(lambda: torch.matmul(x_fp, w_fp.T))
     ms_triton = triton.testing.do_bench(lambda: ForwardGEMM(x_int8, x_scale, w_int8, w_scale, DTYPE))
     
     speedup = ms_torch / ms_triton
