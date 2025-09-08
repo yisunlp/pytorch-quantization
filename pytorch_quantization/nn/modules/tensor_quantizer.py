@@ -307,8 +307,8 @@ class TensorQuantizer(nn.Module):
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-        if not self.training:
-            amax = self.input_scale * 127.0
+        if not self.training and hasattr(self, 'input_scale'):
+            amax = self.input_scale.float() * 127.0
         return amax
 
     def _quant_forward(self, inputs):
