@@ -83,7 +83,12 @@ class TensorQuantizer(nn.Module):
         self._if_quant = if_quant
         self._if_clip = False
         self._if_calib = if_calib
-
+        try:
+            self.use_input_scale = quant_desc.use_input_scale
+        except:
+            self.use_input_scale = False
+        if self.use_input_scale:
+             self.register_buffer("input_scale", torch.Tensor([1.0 / 127.0]))
         if quant_desc.amax is not None:
             self.register_buffer('_amax', torch.tensor(quant_desc.amax))
 
@@ -302,8 +307,8 @@ class TensorQuantizer(nn.Module):
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-        if self._dynamic_input:
-            amax = torch.ones_like(amax) * 127.0
+        if not self.training:
+            amax = self.input_scale * 127.0
         return amax
 
     def _quant_forward(self, inputs):
