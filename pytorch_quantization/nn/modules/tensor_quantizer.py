@@ -17,7 +17,7 @@
 """TensorQuantizer Module"""
 import math
 from absl import logging
-import numpy as np
+
 import torch
 from torch import nn
 
@@ -83,13 +83,7 @@ class TensorQuantizer(nn.Module):
         self._if_quant = if_quant
         self._if_clip = False
         self._if_calib = if_calib
-        try:
-            self.use_input_scale = quant_desc.use_input_scale
-        except:
-            self.use_input_scale = False
-        if self.use_input_scale:
-             self.register_buffer("input_scale", torch.tensor(np.array(1.0 / 127.0,dtype=np.float32)))
-             #self.register_buffer('_amax', torch.tensor(quant_desc.amax))
+
         if quant_desc.amax is not None:
             self.register_buffer('_amax', torch.tensor(quant_desc.amax))
 
@@ -308,8 +302,8 @@ class TensorQuantizer(nn.Module):
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-        if not self.training and hasattr(self, 'input_scale'):
-            amax = self.input_scale.float().clone() * 127.0
+        if self._dynamic_input:
+            amax = torch.ones_like(amax) * 127.0
         return amax
 
     def _quant_forward(self, inputs):
