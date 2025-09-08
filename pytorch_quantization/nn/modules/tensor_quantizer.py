@@ -281,23 +281,23 @@ class TensorQuantizer(nn.Module):
 
     def _get_amax(self, inputs):
         """get amax from buffer or compute it dynamically."""
-        # if hasattr(self, '_amax') and not self.training:
-        #     amax = self._amax
-        # else:
-        if self._axis is None:
-            reduce_axis = None
+        if hasattr(self, '_amax') and not self.training:
+            amax = self._amax
         else:
-            reduce_axis = []
-            # Swap axis to reduce
-            axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
-            for i in range(inputs.dim()):
-                if not i in axis:
-                    reduce_axis.append(i)
-        amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
-        if self._scale_amax is not None:
-            amax = amax.detach() * self._scale_amax
+            if self._axis is None:
+                reduce_axis = None
+            else:
+                reduce_axis = []
+                # Swap axis to reduce
+                axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
+                for i in range(inputs.dim()):
+                    if not i in axis:
+                        reduce_axis.append(i)
+            amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
+            if self._scale_amax is not None:
+                amax = amax.detach() * self._scale_amax
 
-        amax = amax.data
+            amax = amax.data
 
         # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
