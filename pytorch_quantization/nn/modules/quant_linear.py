@@ -79,6 +79,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             output, x_scale = QuantLinearFunction.apply(input, self.weight, self.bias)
             x_scale = x_scale.mean(dim=0)
             self.input_quantizer.input_scale = 0.99 * self.input_quantizer.input_scale + 0.01 * x_scale
+            self.input_quantizer._amax = self.input_quantizer.input_scale * 127.0
 
 
         return output

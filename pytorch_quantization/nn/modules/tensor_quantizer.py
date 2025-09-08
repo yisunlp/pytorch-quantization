@@ -89,6 +89,7 @@ class TensorQuantizer(nn.Module):
             self.use_input_scale = False
         if self.use_input_scale:
              self.register_buffer("input_scale", torch.tensor(np.array(1.0 / 127.0, dtype=np.float32)))
+             self.register_buffer("_amax", torch.tensor(np.array(1.0, dtype=np.float32)))
              #self.register_buffer('_amax', torch.tensor(quant_desc.amax))
         if quant_desc.amax is not None:
             self.register_buffer('_amax', torch.tensor(quant_desc.amax))
@@ -287,29 +288,27 @@ class TensorQuantizer(nn.Module):
 
     def _get_amax(self, inputs):
         """get amax from buffer or compute it dynamically."""
-        # if hasattr(self, '_amax') and not self.training:
-        #     amax = self._amax
-        # else:
-        if self._axis is None:
-            reduce_axis = None
+        if hasattr(self, '_amax') and not self.training:
+            amax = self._amax
         else:
-            reduce_axis = []
-            # Swap axis to reduce
-            axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
-            for i in range(inputs.dim()):
-                if not i in axis:
-                    reduce_axis.append(i)
-        amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
-        if self._scale_amax is not None:
-            amax = amax.detach() * self._scale_amax
+            if self._axis is None:
+                reduce_axis = None
+            else:
+                reduce_axis = []
+                # Swap axis to reduce
+                axis = self._axis if isinstance(self._axis, (list, tuple)) else [self._axis]
+                for i in range(inputs.dim()):
+                    if not i in axis:
+                        reduce_axis.append(i)
+            amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
+            if self._scale_amax is not None:
+                amax = amax.detach() * self._scale_amax
 
-        amax = amax.data
+            amax = amax.data
 
-        # cast amax to float32 if it is in a lower precision dtype
+            # cast amax to float32 if it is in a lower precision dtype
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
-        if not self.training and hasattr(self, 'input_scale'):
-            amax = self.input_scale.float() * 127.0
         return amax
 
     def _quant_forward(self, inputs):
