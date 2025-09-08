@@ -75,10 +75,8 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
 
             output = F.linear(quant_input, quant_weight, bias=self.bias)
         else:
-            output = QuantLinearFunction.apply(input, self.weight, self.bias)
-            x_scale = input.abs().max(dim=-1).values
-            x_scale = (x_scale.max() + x_scale.mean()) / 2
-            
+            output, x_scale = QuantLinearFunction.apply(input, self.weight, self.bias)
+            x_scale = (x_scale.mean() + x_scale.max())/2
             self.input_scale = 0.99 * self.input_scale + 0.01 * x_scale
 
         return output

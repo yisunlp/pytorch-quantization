@@ -30,10 +30,10 @@ class QuantLinearFunction(torch.autograd.Function):
             output += bias
         
         out_features = weight.shape[0]
-        return output.reshape(bs, sq, out_features)
+        return output.reshape(bs, sq, out_features), x_scale
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, grad_output, grad_x_scale):
         input, weight, bias = ctx.saved_tensors
         grad_input = grad_weight = grad_bias = None
 
