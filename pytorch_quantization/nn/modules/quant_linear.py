@@ -66,41 +66,19 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     def __init__(self, in_features, out_features, bias=True, **kwargs):
         super(QuantLinear, self).__init__(in_features, out_features, bias)
         quant_desc_input, quant_desc_weight = _utils.pop_quant_desc_in_kwargs(self.__class__, **kwargs)
-        self.dynamic_input = quant_desc_input.dynamic_input
-
         self.init_quantizer(quant_desc_input, quant_desc_weight)
+        self.register_buffer("input_scale", 1.0 / 127.0)
 
     def forward(self, input):
-        if not self.training and self.dynamic_input:
-            dtype=input.dtype
-            input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True)[0]
-            input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
-            input = (input.float() / input_scale.float()).clamp(-127.0, 127.0).to(dtype)
-            #Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
-            # if True: # Now weight need to scale dynamically because the weight btq and TRT refit operation
-            #     weight_abs_max = torch.max(torch.abs(self.weight), dim=-1, keepdim=True)[0]
-            #     weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
-            #     weight = self.weight / weight_scale
-
+        if not self.training:
             quant_input = self._input_quantizer(input)
             quant_weight = self._weight_quantizer(self.weight)
 
-            output = F.linear(quant_input, quant_weight)
-            output = output * input_scale
-            if self.bias is not None:
-                output += self.bias.unsqueeze(0)
+            output = F.linear(quant_input, quant_weight, bias=self.bias)
         else:
-            # Defultly, use our true quantization and Linear function to accelerate the training
-            # Instead of using the torch.nn.functional.linear with bf16/fp16, we use FP8/INT8 kernel for GEMM
-            # Initial code:
-            # quant_input = self._input_quantizer(input)
-            # quant_weight = self._weight_quantizer(self.weight)
-            # output = F.linear(quant_input, quant_weight, bias=self.bias)
-            
-            # During inference, please specify dynamic_input=True because we have deleted the code for the initial static quantization
-            
-            # New code:
-            output = QuantLinearFunction.apply(input, self.weight, self.bias)
+            output, x_scale = QuantLinearFunction.apply(input, self.weight, self.bias)
+            x_scale = x_scale.mean(dim=0)
+            self.input_scale = 0.99 * self.input_scale + 0.01 * x_scale
 
         return output
 
