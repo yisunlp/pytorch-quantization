@@ -67,7 +67,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         super(QuantLinear, self).__init__(in_features, out_features, bias)
         quant_desc_input, quant_desc_weight = _utils.pop_quant_desc_in_kwargs(self.__class__, **kwargs)
         self.init_quantizer(quant_desc_input, quant_desc_weight)
-        self.register_buffer("input_scale", 1.0 / 127.0)
+        self.register_buffer("input_scale", torch.Tensor(1.0 / 127.0))
 
     def forward(self, input):
         if not self.training:
