@@ -17,7 +17,7 @@
 """TensorQuantizer Module"""
 import math
 from absl import logging
-
+import numpy as np
 import torch
 from torch import nn
 
@@ -88,7 +88,8 @@ class TensorQuantizer(nn.Module):
         except:
             self.use_input_scale = False
         if self.use_input_scale:
-             self.register_buffer("input_scale", torch.Tensor([1.0 / 127.0]))
+             self.register_buffer("input_scale", torch.Tensor(np.array(1.0 / 127.0)))
+             #self.register_buffer('_amax', torch.tensor(quant_desc.amax))
         if quant_desc.amax is not None:
             self.register_buffer('_amax', torch.tensor(quant_desc.amax))
 
