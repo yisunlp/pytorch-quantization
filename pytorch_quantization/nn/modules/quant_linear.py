@@ -17,14 +17,12 @@
 
 
 """Quantized Linear"""
-from numpy import dtype
-import torch
 from torch import nn
 from torch.nn import functional as F
+import torch
 import numpy as np
 from pytorch_quantization import tensor_quant
 from .LinearKernels.LinearFunction import QuantLinearFunction
-
 from . import _utils
 
 __all__ = ["Linear", "QuantLinear"]
@@ -66,9 +64,10 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     def __init__(self, in_features, out_features, bias=True, **kwargs):
         super(QuantLinear, self).__init__(in_features, out_features, bias)
         quant_desc_input, quant_desc_weight = _utils.pop_quant_desc_in_kwargs(self.__class__, **kwargs)
+
         self.init_quantizer(quant_desc_input, quant_desc_weight)
         self.register_buffer("input_scale", torch.tensor(np.array(1.0 / 127.0,dtype=np.float32)))
-
+    
     def forward(self, input):
         if not self.training:
             quant_input = self._input_quantizer(input)
@@ -80,7 +79,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             x_scale = x_scale.mean(dim=0)
             self.input_scale = 0.99 * self.input_scale + 0.01 * x_scale
 
-
         return output
+
 
 Linear = QuantLinear

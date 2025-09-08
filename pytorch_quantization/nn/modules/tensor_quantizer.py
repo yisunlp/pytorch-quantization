@@ -76,7 +76,6 @@ class TensorQuantizer(nn.Module):
         self._learn_amax = quant_desc.learn_amax
         self._unsigned = quant_desc.unsigned
         self._narrow_range = quant_desc.narrow_range
-        self._dynamic_input = quant_desc.dynamic_input
 
         self._scale = None if not quant_desc.fake_quant else 1.
         self._disabled = disabled
@@ -281,7 +280,7 @@ class TensorQuantizer(nn.Module):
 
     def _get_amax(self, inputs):
         """get amax from buffer or compute it dynamically."""
-        if hasattr(self, '_amax') and not self.training:
+        if hasattr(self, '_amax'):
             amax = self._amax
         else:
             if self._axis is None:
@@ -294,16 +293,15 @@ class TensorQuantizer(nn.Module):
                     if not i in axis:
                         reduce_axis.append(i)
             amax = quant_utils.reduce_amax(inputs, axis=reduce_axis, keepdims=True).detach()
-            if self._scale_amax is not None:
-                amax = amax.detach() * self._scale_amax
+        if self._scale_amax is not None:
+            amax = amax.detach() * self._scale_amax
 
-            amax = amax.data
+        amax = amax.data
 
-            # cast amax to float32 if it is in a lower precision dtype
-            if amax.dtype not in (torch.double, torch.float):
-                amax = amax.float()
-        if self._dynamic_input:
-            amax = torch.ones_like(amax) * 127.0
+        # cast amax to float32 if it is in a lower precision dtype
+        if amax.dtype not in (torch.double, torch.float):
+            amax = amax.float()
+
         return amax
 
     def _quant_forward(self, inputs):
