@@ -299,9 +299,9 @@ class TensorQuantizer(nn.Module):
 
             amax = amax.data
 
-        # cast amax to float32 if it is in a lower precision dtype
-        if amax.dtype not in (torch.double, torch.float):
-            amax = amax.float()
+            # cast amax to float32 if it is in a lower precision dtype
+            if amax.dtype not in (torch.double, torch.float):
+                amax = amax.float()
         if self._dynamic_input:
             amax = torch.ones_like(amax) * 127.0
         return amax
