@@ -73,7 +73,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             quant_input = self._input_quantizer(input)
             quant_weight = self._weight_quantizer(self.weight)
 
-            output = F.linear(quant_input, quant_weight, bias=self.bias)
+            output = F.linear(quant_input.to(quant_weight.dtype), quant_weight, bias=self.bias)
         else:
             output, x_scale = QuantLinearFunction.apply(input, self.weight, self.bias)
             x_scale = x_scale.detach()
