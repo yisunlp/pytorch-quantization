@@ -73,7 +73,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     def forward(self, input):
         if not self.training and self.dynamic_input:
             dtype=input.dtype
-            input_abs_max = torch.max(torch.abs(input[:,:,:input.shape[-1]//4]), dim=-1, keepdim=True).values
+            input_abs_max = torch.max(torch.abs(input[:,:,:input.shape[-1]//8]), dim=-1, keepdim=True).values
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
             input = input / input_scale
             #Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
