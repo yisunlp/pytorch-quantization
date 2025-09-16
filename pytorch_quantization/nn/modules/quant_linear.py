@@ -75,11 +75,11 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             dtype=input.dtype
             dim = input.shape[-1]
             if len(input.shape)==2:
-                input_abs_max = torch.max(torch.abs(input[:,:dim//8]), dim=-1, keepdim=True).values
+                input_abs_max = torch.max(torch.abs(input[:,:dim//8]), dim=-1, keepdim=True).values*(1.125)
             elif len(input.shape)==3:
-                input_abs_max = torch.max(torch.abs(input[:,:,:dim//8]), dim=-1, keepdim=True).values
+                input_abs_max = torch.max(torch.abs(input[:,:,:dim//8]), dim=-1, keepdim=True).values*(1.125)
             else:
-                input_abs_max = torch.max(torch.abs(input[:,:,:,:dim//8]), dim=-1, keepdim=True).values
+                input_abs_max = torch.max(torch.abs(input[:,:,:,:dim//8]), dim=-1, keepdim=True).values*(1.125)
             
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
             input = (input.float() / input_scale.float()).to(dtype)
