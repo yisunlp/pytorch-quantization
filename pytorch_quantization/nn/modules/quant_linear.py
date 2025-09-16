@@ -82,7 +82,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
                 input_abs_max = torch.max(torch.abs(input[:,:,:,:dim//8]), dim=-1, keepdim=True).values
             
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
-            input = input / input_scale
+            input = (input.float() / input_scale.float()).to(dtype)
             #Scale the weight to match the input scale, now default True, need to set dynamic_input=True for Linear
             # if True: # Now weight need to scale dynamically because the weight btq and TRT refit operation
             #     weight_abs_max = torch.max(torch.abs(self.weight), dim=-1, keepdim=True)[0]
