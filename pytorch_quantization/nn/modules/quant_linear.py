@@ -73,7 +73,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     def forward(self, input):
         if not self.training and self.dynamic_input:
             dtype=input.dtype
-            bs,tokens,dim = input.shape[-1]
+            bs,tokens,dim = input.shape
             part_channels = input[:,:,:dim//8]
             part_tokens = input[:,:8,:]
             input_abs_max_row = torch.max(torch.abs(part_channels), dim=-1, keepdim=True).values # bs,tokens,1
