@@ -73,13 +73,14 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
     def forward(self, input):
         if not self.training and self.dynamic_input:
             dtype=input.dtype
-            dim = input.shape[-1]
-            if len(input.shape)==2:
-                input_abs_max = torch.max(torch.abs(input[:,:dim//8]), dim=-1, keepdim=True).values*1.125
-            elif len(input.shape)==3:
-                input_abs_max = torch.max(torch.abs(input[:,:,:dim//8]), dim=-1, keepdim=True).values*1.125
-            else:
-                input_abs_max = torch.max(torch.abs(input[:,:,:,:dim//8]), dim=-1, keepdim=True).values*1.125
+            bs,tokens,dim = input.shape[-1]
+            part_channels = input[:,:,:dim//8]
+            part_tokens = input[:,:8,:]
+            input_abs_max_row = torch.max(torch.abs(part_channels), dim=-1, keepdim=True).values # bs,tokens,1
+            input_abs_max_col = torch.max(torch.abs(part_tokens), dim=-1, keepdim=True).values #bs,8,1
+            scale_amax = (input_abs_max_col / input_abs_max_row[:,:8,:]).mean() # bs, 8, 1
+            input_abs_max = input_abs_max_row*scale_amax
+
             #input_abs_max = torch.max(torch.abs(input), dim=-1, keepdim=True).values
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
             input = torch.clamp((input.float() / input_scale.float()),-127.0,127.0).to(dtype)
