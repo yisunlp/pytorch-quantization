@@ -75,7 +75,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             dtype=input.dtype
             calib_tokens =  input[:,:8,:]
             max_channel = calib_tokens.abs().mean(dim=(0,1,2)).argmax()
-            input_abs_max = torch.max(torch.abs(input[:,:,max_channel:max_channel+1]), dim=-1, keepdim=True).values
+            input_abs_max = torch.abs(input[:,:,max_channel:max_channel+1])
             input_abs_max = input_abs_max * 1.25
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
             input = torch.clamp((input.float() / input_scale.float()),-127.0,127.0).to(dtype)
