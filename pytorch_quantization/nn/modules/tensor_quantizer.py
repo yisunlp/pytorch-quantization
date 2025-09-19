@@ -303,7 +303,7 @@ class TensorQuantizer(nn.Module):
         if amax.dtype not in (torch.double, torch.float):
             amax = amax.float()
         if self._dynamic_input:
-            amax = torch.ones_like(amax) * 127.0
+            amax = torch.ones_like(amax,dtype=torch.float16) * 127.0
         return amax
 
     def _quant_forward(self, inputs):
