@@ -82,8 +82,8 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             #     weight_scale = (weight_abs_max / 127.0).clamp(min=1e-8)
             #     weight = self.weight / weight_scale
 
-            quant_input = self._input_quantizer(input)
-            quant_weight = self._weight_quantizer(self.weight)
+            quant_input = self._input_quantizer(input.float())
+            quant_weight = self._weight_quantizer(self.weight.float())
 
             output = F.linear(quant_input, quant_weight).to(torch.float16)
             output = output * input_scale
