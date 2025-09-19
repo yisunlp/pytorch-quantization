@@ -74,7 +74,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         if not self.training and self.dynamic_input:
             dtype=input.dtype
             calib_tokens =  input[:,:8,:]
-            max_channel = calib_tokens.abs().mean(dim=(0,1)).argmax()
+            max_channel = calib_tokens.abs().mean(dim=(0,1),keepdim=True).argmax()
             input_abs_max = torch.abs(input[:,:,max_channel:max_channel+1])
             input_abs_max = input_abs_max * 1.25
             input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
