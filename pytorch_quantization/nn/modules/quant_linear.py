@@ -69,14 +69,14 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         self.dynamic_input = quant_desc_input.dynamic_input
 
         self.init_quantizer(quant_desc_input, quant_desc_weight)
-        self.traced_scale = nn.Parameter(torch.ones([1,1,in_features]), requires_grad=False)
+        self.traced_scale = nn.Parameter(torch.ones([1,in_features]), requires_grad=False)
         self.traced_weight = nn.Parameter(torch.ones_like(self.weight), requires_grad=False)
         self.steps = 0
 
     def forward(self, input):
         if not self.training and self.dynamic_input:
             dtype=input.dtype
-            input = torch.clamp((input.float() / self.traced_scale.float()), -127.0, 127.0).to(dtype)
+            input = torch.clamp((input.float() / self.traced_scale.unsqueeze(0).float()), -127.0, 127.0).to(dtype)
             quant_input = self._input_quantizer(input)
             quant_weight = self._weight_quantizer(self.traced_weight)
 
@@ -85,10 +85,10 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
             self.steps += 1
             output = QuantLinearFunction.apply(input, self.weight, self.bias)
             if self.steps % 100 == 0:
-                input_abs_max = torch.max(torch.abs(input), dim=(0,1), keepdim=True).values # [1,1,K]
+                input_abs_max = torch.max(torch.abs(input), dim=(0,1), keepdim=True).values.squeeze(0) # [1,K]
                 input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
                 self.traced_scale.data = input_scale
-                self.traced_weight.data = self.weight * input_scale.squeeze(0)
+                self.traced_weight.data = self.weight * input_scale
                 print("=======scale============")
                 print(self.traced_scale.data)
                 print("=======scale============")
