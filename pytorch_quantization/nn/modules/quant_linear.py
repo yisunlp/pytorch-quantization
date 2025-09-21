@@ -82,7 +82,6 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
 
             output = F.linear(quant_input, quant_weight).to(torch.float16)
         else:
-            self.steps += 1
             output = QuantLinearFunction.apply(input, self.weight, self.bias)
             if self.steps % 100 == 0:
                 input_abs_max = torch.max(torch.abs(input), dim=(0,1), keepdim=True).values.squeeze(0) # [1,K]
@@ -92,6 +91,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
                 print("=======scale============")
                 print(self.traced_scale.data)
                 print("=======scale============")
+            self.steps += 1
         return output
 
 Linear = QuantLinear
