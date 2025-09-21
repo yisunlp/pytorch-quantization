@@ -69,7 +69,7 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         self.dynamic_input = quant_desc_input.dynamic_input
 
         self.init_quantizer(quant_desc_input, quant_desc_weight)
-        self.traced_scale = nn.Parameter(torch.ones([in_features]), requires_grad=False)
+        self.traced_scale = nn.Parameter(torch.ones([1,1,in_features]), requires_grad=False)
         self.steps = 0
 
     def forward(self, input):
