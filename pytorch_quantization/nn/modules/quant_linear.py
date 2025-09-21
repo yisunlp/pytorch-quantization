@@ -87,6 +87,9 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
                 input_abs_max = torch.max(torch.abs(input), dim=(0,1), keepdim=True).values # [1,1,K]
                 input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
                 self.traced_scale.data = input_scale
+                print("=======scale============")
+                print(self.traced_scale.data)
+                print("=======scale============")
         return output
 
 Linear = QuantLinear
