@@ -84,7 +84,8 @@ class QuantLinear(nn.Linear, _utils.QuantMixin):
         else:
             output = QuantLinearFunction.apply(input, self.weight, self.bias)
             if self.steps % 100 == 0:
-                input_abs_max = torch.max(torch.abs(input), dim=(0,1), keepdim=False).values.unsqueeze(0) # [1,K]
+                bs,seq_len,k =input.shape
+                input_abs_max = torch.max(torch.abs(input.reshape(bs*seq_len,k)), dim=0, keepdim=True).values # [1,K]
                 input_scale = (input_abs_max.clamp(min=1e-6) / 127.0)
                 self.traced_scale.data = input_scale
                 self.traced_weight.data = self.weight * input_scale
